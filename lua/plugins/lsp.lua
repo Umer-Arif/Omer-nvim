@@ -1,5 +1,5 @@
 return {
-  -- Mason: LSP/DAP/Linter installer
+  -- Mason: LSP installer
   {
     "williamboman/mason.nvim",
     build = ":MasonUpdate",
@@ -10,7 +10,7 @@ return {
     },
   },
 
-  -- Mason-LSPConfig: bridge Mason and lspconfig
+  -- Mason-LSPConfig
   {
     "williamboman/mason-lspconfig.nvim",
     dependencies = {
@@ -22,41 +22,46 @@ return {
         "pyright",
         "clangd",
         "lua_ls",
-        "html",
-        "cssls",
       },
-      automatic_installation = true,
+      automatic_installation = false,
     },
   },
 
-  -- typescript-tools.nvim: TypeScript integration
+  -- typescript-tools.nvim: THE ONLY TS/JS LSP WE WANT
   {
     "pmizio/typescript-tools.nvim",
     dependencies = {
       "nvim-lua/plenary.nvim",
-      "neovim/nvim-lspconfig",
     },
+    ft = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+    init = function()
+      -- BLOCK any tsserver installation attempts
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "MasonPackageInstalling",
+        callback = function(args)
+          if args.data.package == "typescript-language-server" then
+            vim.notify("BLOCKED: typescript-language-server installation", vim.log.levels.WARN)
+            vim.cmd("MasonUninstall typescript-language-server")
+          end
+        end,
+      })
+    end,
     opts = {
       settings = {
-        separate_diagnostic_server = true,
+        separate_diagnostic_server = false,
         publish_diagnostic_on = "insert_leave",
         expose_as_code_action = {
           "fix_all",
           "add_missing_imports",
           "remove_unused",
         },
-        jsx_close_tag = {
-          enable = false,
-          filetypes = { "javascriptreact", "typescriptreact" },
-        },
         tsserver_file_preferences = {
-          includeInlayParameterNameHints = "all",
-          includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-          includeInlayFunctionParameterTypeHints = true,
-          includeInlayVariableTypeHints = true,
-          includeInlayPropertyDeclarationTypeHints = true,
-          includeInlayFunctionLikeReturnTypeHints = true,
-          includeInlayEnumMemberValueHints = true,
+          includeInlayParameterNameHints = "none",
+          includeInlayFunctionParameterTypeHints = false,
+          includeInlayVariableTypeHints = false,
+          includeInlayPropertyDeclarationTypeHints = false,
+          includeInlayFunctionLikeReturnTypeHints = false,
+          includeInlayEnumMemberValueHints = false,
         },
       },
       on_attach = function(client, bufnr)
@@ -67,7 +72,7 @@ return {
     },
   },
 
-  -- nvim-lspconfig: core LSP client setup
+  -- nvim-lspconfig: Core LSP setup
   {
     "neovim/nvim-lspconfig",
     dependencies = {
@@ -75,27 +80,42 @@ return {
     },
     config = function()
       local lspconfig = require("lspconfig")
-      local servers = {
-        "pyright",
-        "clangd",
-        "lua_ls",
-        "html",
-        "cssls",
-      }
 
-      for _, server in ipairs(servers) do
-        lspconfig[server].setup({
-          handlers = {
-            ["textDocument/signatureHelp"] = function() end,
-          },
-        })
-      end
+      -- Explicitly disable ts_ls to prevent any auto-loading
+      lspconfig.ts_ls.setup({
+        on_attach = function() end,
+        autostart = false,
+      })
+
+      -- Lazy load other LSPs
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "python", "lua", "c", "cpp", "html", "css" },
+        callback = function(args)
+          local ft = args.match
+          local servers = {
+            python = "pyright",
+            lua = "lua_ls",
+            c = "clangd",
+            cpp = "clangd",
+            html = "html",
+            css = "cssls",
+          }
+          if servers[ft] and not lspconfig[servers[ft]].manager then
+            lspconfig[servers[ft]].setup({
+              handlers = {
+                ["textDocument/signatureHelp"] = function() end,
+              },
+            })
+          end
+        end,
+      })
     end,
   },
 
-  -- nvim-cmp: Autocompletion engine
+  -- nvim-cmp: Autocompletion
   {
     "hrsh7th/nvim-cmp",
+    event = "InsertEnter",
     dependencies = {
       "hrsh7th/cmp-nvim-lsp",
       "hrsh7th/cmp-buffer",
@@ -108,81 +128,36 @@ return {
       cmp.setup({
         sources = cmp.config.sources({
           { name = "nvim_lsp" },
-          { name = "buffer", option = { max_indexed_line_length = 100 } },
+          { name = "buffer" },
           { name = "path" },
         }),
         mapping = cmp.mapping.preset.insert({
-          ["<C-b>"] = cmp.mapping.scroll_docs(-4),
-          ["<C-f>"] = cmp.mapping.scroll_docs(4),
           ["<C-Space>"] = cmp.mapping.complete(),
-          ["<C-e>"] = cmp.mapping.abort(),
-          ["<CR>"] = cmp.mapping({
-            i = function(fallback)
-              if cmp.visible() and cmp.get_active_entry() then
-                cmp.confirm({ select = false })
-              else
-                fallback()
-              end
-            end,
-            s = cmp.mapping.confirm({ select = true }),
-            c = cmp.mapping.confirm({ select = true }),
+          ["<CR>"] = cmp.mapping.confirm({ select = false }),
         }),
-        ["<C-y>"] = cmp.mapping.confirm({ select = true }),
-        }),
-        completion = {
-          completeopt = "menu,menuone,noinsert",
-        },
       })
       cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
     end,
   },
 
-  -- nvim-autopairs: Auto-insert closing brackets, quotes, etc.
+  -- nvim-autopairs
   {
     "windwp/nvim-autopairs",
     event = "InsertEnter",
-    config = function()
-      require("nvim-autopairs").setup({
-        check_ts = true,
-        ts_config = {
-          lua = { "string", "source" },
-          javascript = { "string", "template_string" },
-          typescript = { "string", "template_string" },
-          javascriptreact = { "string", "template_string", "jsx_element", "tsx_element" },
-          typescriptreact = { "string", "template_string", "jsx_element", "tsx_element" },
-        },
-        fast_wrap = {
-          map = "<M-e>",
-          chars = { "{", "[", "(", '"', "'" },
-          pattern = [=[[%'%"%>%]%)%}%,]]=],
-          end_key = "$",
-          keys = "qwertyuiopzxcvbnmasdfghjkl",
-          check_comma = true,
-          highlight = "Search",
-          highlight_grey = "Comment",
-        },
-      })
-    end,
+    config = true,
   },
 
-  -- conform.nvim: Formatter integration
+  -- conform.nvim: Formatter
   {
     "stevearc/conform.nvim",
-    event = { "BufWrite", "BufWritePre" },
+    event = "BufWritePre",
     opts = {
       formatters_by_ft = {
-        typescript = { "prettier" },
-        typescriptreact = { "prettier" },
         javascript = { "prettier" },
-        javascriptreact = { "prettier" },
         lua = { "stylua" },
         python = { "black" },
         html = { "prettier" },
         css = { "prettier" },
-      },
-      format_on_save = {
-        timeout_ms = 500,
-        lsp_fallback = false, -- Don't fallback to LSP formatting
       },
     },
   },
