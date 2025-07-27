@@ -34,14 +34,11 @@ vim.keymap.set("n", "<F7>", function()
 end, { noremap = true, silent = true, desc = "Run Lua code" })
 
 -- ==========================================================================================
--- 📂 BufferLine Navigation
+-- 📂 Buffer Navigation
 -- ==========================================================================================
-vim.keymap.set("n", "<A-1>", "<cmd>BufferLineGoToBuffer 1<CR>", { desc = "Go to buffer 1" })
-vim.keymap.set("n", "<A-2>", "<cmd>BufferLineGoToBuffer 2<CR>", { desc = "Go to buffer 2" })
-vim.keymap.set("n", "<A-3>", "<cmd>BufferLineGoToBuffer 3<CR>", { desc = "Go to buffer 3" })
-vim.keymap.set("n", "<A-4>", "<cmd>BufferLineGoToBuffer 4<CR>", { desc = "Go to buffer 4" })
-vim.keymap.set("n", "<A-5>", "<cmd>BufferLineGoToBuffer 5<CR>", { desc = "Go to buffer 5" })
-vim.keymap.set("n", "<A-6>", "<cmd>BufferLineGoToBuffer 6<CR>", { desc = "Go to buffer 6" })
+vim.keymap.set("n", "<A-p>", "<cmd>bprev<CR>", { desc = "Previous buffer" })
+vim.keymap.set("n", "<A-n>", "<cmd>bnext<CR>", { desc = "Next buffer" })
+
 
 -- ==========================================================================================
 -- 🪟 Window Navigation (Splits)

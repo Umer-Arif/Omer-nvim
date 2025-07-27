@@ -1,6 +1,7 @@
 -- lua/plugins/lualine.lua
 return {
     "nvim-lualine/lualine.nvim",
+    enabled = true,
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     -- This 'config' function runs AFTER the plugin is loaded by Lazy.nvim
     config = function()
@@ -17,7 +18,7 @@ return {
                 ignore_focus = {},
                 always_divide_middle = true,
                 always_show_tabline = true, -- If you want the tabline always visible
-                globalstatus = false, -- Set to true to have a single statusline for all windows
+                globalstatus = false,       -- Set to true to have a single statusline for all windows
                 refresh = {
                     statusline = 1000,
                     tabline = 1000,
@@ -54,7 +55,7 @@ return {
                 lualine_z = {}
             },
             tabline = {}, -- Empty table means no tabline, or configure it here
-            winbar = {}, -- Empty table means no winbar, or configure it here
+            winbar = {},  -- Empty table means no winbar, or configure it here
             inactive_winbar = {},
             extensions = {}
         }
