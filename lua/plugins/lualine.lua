@@ -39,11 +39,26 @@ return {
                 }
             },
             sections = {
-                lualine_a = { 'mode' },
-                lualine_b = { 'branch', 'diff', 'diagnostics' },
-                lualine_c = { 'filename' },
-                lualine_x = { 'encoding', 'fileformat', 'filetype' },
-                lualine_y = { 'progress' },
+                lualine_a = {
+                    {
+                        'mode',
+                        fmt = function(str)
+                            return ' ' .. str -- prepend Vim logo
+                        end,
+                        --gui = 'bold', -- make it bold
+                    }
+                },
+
+                lualine_b = { 'diff', 'diagnostics' },
+                lualine_c = { { 'filename', path = 1 } },
+                lualine_x = { 'filetype' },
+                lualine_y = {
+                    'progress', -- still shows percentage
+                    {
+                        function() return vim.fn.line('$') end, -- returns total lines in buffer
+                        icon = '', -- optional: icon for line count
+                    }
+                },
                 lualine_z = { 'location' }
             },
             inactive_sections = {
