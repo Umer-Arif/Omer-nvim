@@ -53,7 +53,6 @@ return {
                 lualine_c = { { 'filename', path = 1 } },
                 lualine_x = { 'filetype' },
                 lualine_y = {
-                    'progress', -- still shows percentage
                     {
                         function() return vim.fn.line('$') end, -- returns total lines in buffer
                         icon = '', -- optional: icon for line count
